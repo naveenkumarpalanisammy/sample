@@ -1,21 +1,46 @@
 pipeline {
-  agent none
-  stages {
-    stage('Back-end') {
-      agent {
-        docker { image 'maven:3.8.1-adoptopenjdk-11' }
-      }
-      steps {
-        sh 'mvn --version'
-      }
+    agent any
+    
+    environment {
+        MAVEN_HOME = tool 'Maven'
+        PATH = "$MAVEN_HOME/bin:$PATH"
     }
-    stage('Front-end') {
-      agent {
-        docker { image 'node:16-alpine' }
-      }
-      steps {
-        sh 'node --version'
-      }
+    
+    stages {
+        stage('Install Tools') {
+            steps {
+                script {
+                    // Install Snorlax Cube if not installed
+                    if (!fileExists("/root/.sno")) {
+                        sh 'curl -sL https://get.sno.works | sh'
+                    }
+                    PATH = "/root/.sno/bin:$PATH"
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                // Run Maven commands or Snorlax Cube commands here
+                sh 'mvn clean install'
+                sh 'snorlax cube build'
+            }
+        }
     }
-  }
+    post {
+        always {
+            // Clean up any resources if necessary
+        }
+        success {
+            // Actions to take if the pipeline is successful
+        }
+        failure {
+            // Actions to take if the pipeline fails
+        }
+    }
 }
+
+def fileExists(path) {
+    def file = new File(path)
+    return file.exists()
+}
+
