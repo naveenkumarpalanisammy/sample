@@ -1,28 +1,49 @@
 pipeline {
-    agent any
-    
-    environment {
-        MAVEN_HOME = tool 'Maven'
-        PATH = "$MAVEN_HOME/bin:$PATH"
-    }
+    agent none
     
     stages {
         stage('Install Tools') {
+            agent {
+                docker {
+                    // Use an image that has Maven installed or has the capability to install it
+                    image 'maven:latest'
+                    args '-v /path/to/m2/repository:/root/.m2/repository' // Mount Maven repository volume if needed
+                }
+            }
             steps {
+                // Install Maven if not installed
                 script {
-                    // Install Snorlax Cube if not installed
-                    if (!fileExists("/root/.sno")) {
-                        sh 'curl -sL https://get.sno.works | sh'
+                    def mvnHome = tool 'Maven'
+                    if (mvnHome == null) {
+                        def mvnTool = tool name: 'Maven', type: 'maven'
+                        env.PATH = "${mvnTool}/bin:${env.PATH}"
                     }
-                    PATH = "/root/.sno/bin:$PATH"
                 }
             }
         }
         stage('Build') {
+            agent {
+                docker {
+                    // Use an image that has Snorlax Cube installed or has the capability to install it
+                    image 'snorlax-cube:latest'
+                }
+            }
             steps {
-                // Run Maven commands or Snorlax Cube commands here
-                sh 'mvn clean install'
+                // Run Snorlax Cube commands here
                 sh 'snorlax cube build'
+            }
+        }
+        stage('Maven Build') {
+            agent {
+                docker {
+                    // Use an image that has Maven installed or has the capability to install it
+                    image 'maven:latest'
+                    args '-v /path/to/m2/repository:/root/.m2/repository' // Mount Maven repository volume if needed
+                }
+            }
+            steps {
+                // Run Maven commands here
+                sh 'mvn clean install'
             }
         }
     }
@@ -39,8 +60,4 @@ pipeline {
     }
 }
 
-def fileExists(path) {
-    def file = new File(path)
-    return file.exists()
-}
 
