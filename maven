@@ -1,63 +1,22 @@
 pipeline {
-    agent none
-    
-    stages {
-        stage('Install Tools') {
-            agent {
-                docker {
-                    // Use an image that has Maven installed or has the capability to install it
-                    image 'maven:latest'
-                    args '-v /path/to/m2/repository:/root/.m2/repository' // Mount Maven repository volume if needed
-                }
-            }
-            steps {
-                // Install Maven if not installed
-                script {
-                    def mvnHome = tool 'Maven'
-                    if (mvnHome == null) {
-                        def mvnTool = tool name: 'Maven', type: 'maven'
-                        env.PATH = "${mvnTool}/bin:${env.PATH}"
-                    }
-                }
-            }
-        }
-        stage('Build') {
-            agent {
-                docker {
-                    // Use an image that has Snorlax Cube installed or has the capability to install it
-                    image 'snorlax-cube:latest'
-                }
-            }
-            steps {
-                // Run Snorlax Cube commands here
-                sh 'snorlax cube build'
-            }
-        }
-        stage('Maven Build') {
-            agent {
-                docker {
-                    // Use an image that has Maven installed or has the capability to install it
-                    image 'maven:latest'
-                    args '-v /path/to/m2/repository:/root/.m2/repository' // Mount Maven repository volume if needed
-                }
-            }
-            steps {
-                // Run Maven commands here
-                sh 'mvn clean install'
-            }
-        }
+  agent none
+  stages {
+    stage('Back-end') {
+      agent {
+        docker { image 'maven:3.8.1-adoptopenjdk-11' }
+      }
+      steps {
+        sh 'mvn --version'
+      }
     }
-    post {
-        always {
-            // Clean up any resources if necessary
-        }
-        success {
-            // Actions to take if the pipeline is successful
-        }
-        failure {
-            // Actions to take if the pipeline fails
-        }
+    stage('Front-end') {
+      agent {
+        docker { image 'node:16-alpine' }
+      }
+      steps {
+        sh 'node --version'
+      }
     }
+  }
 }
-
 
